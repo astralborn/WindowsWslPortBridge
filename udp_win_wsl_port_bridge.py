@@ -1,15 +1,31 @@
 # mypy: ignore-errors
 """
-UDP Windows-to-WSL Bridge
+UDP Windows-to-WSL Port Bridge
 
-A production-grade asyncio-based UDP relay that transparently forwards
-traffic between Windows and WSL, maintaining per-client sessions and
-cleaning up idle connections.
+This service enables UDP communication between a Windows host and a
+Windows Subsystem for Linux (WSL) instance.
 
-Use case:
-- SIP / RTP development
-- Game servers
+The bridge listens for UDP packets on a specified port on Windows,
+forwards them to a UDP service running inside WSL, and relays responses
+back to the originating client. Per-client mappings are maintained to
+support concurrent UDP flows, and idle connections are automatically
+cleaned up.
+
+The service supports graceful shutdown via Ctrl+C and is intended to run
+as a long-lived background process on Windows.
+
+Notes:
+- Windows does not provide a built-in UDP port proxy equivalent to
+  `netsh interface portproxy` (TCP-only).
+- This bridge fills that gap using an asyncio-based implementation.
+
+Typical use cases:
+- SIP / RTP development and testing
 - Local UDP services inside WSL
+- Game servers and custom UDP protocols
+
+The WSL IP address can be specified manually or auto-detected using
+`wsl hostname -I`.
 """
 
 import argparse
