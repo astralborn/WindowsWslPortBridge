@@ -27,16 +27,6 @@ inside WSL.
 The UDP Windows-to-WSL Bridge acts as an intermediary between UDP clients
 on Windows and a UDP service running inside WSL.
 
-[ UDP Client ]
-|
-v
-[ Windows Host ]
-UDP Bridge
-|
-v
-[ WSL Instance ]
-UDP Service
-
 
 1. The bridge listens on a specified UDP port on the Windows host.
 2. When a UDP packet is received, the client’s source IP and port are
