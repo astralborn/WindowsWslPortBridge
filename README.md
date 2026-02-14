@@ -1,43 +1,157 @@
- UDP Windows-to-WSL Port Bridge
+# 🚀 UDP Windows-to-WSL Port Bridge
 
-A UDP port bridge that enables communication between a Windows host and a
-Windows Subsystem for Linux (WSL) instance.
+> A lightweight async UDP bridge enabling communication between Windows
+> and WSL.
 
-The bridge listens for UDP packets on a specified port on Windows,
-forwards them to a UDP service running inside WSL, and relays responses
-back to the original client. Per-client mappings are maintained to
-support concurrent UDP flows, and idle connections are automatically
-cleaned up.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)
+![Asyncio](https://img.shields.io/badge/Async-asyncio-green.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%2B%20WSL-lightgrey.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
----
+------------------------------------------------------------------------
 
-## Background
+## 📌 Overview
 
-Windows provides a built-in port proxy (`netsh interface portproxy`) for
-TCP traffic, but **UDP is not supported**.
+Windows provides a built-in TCP port proxy:
 
-This project implements a UDP alternative using Python and `asyncio`,
-allowing Windows applications to communicate with UDP services running
-inside WSL.
+``` bash
+netsh interface portproxy
+```
 
----
+However, **UDP is not supported**.
 
-## How It Works
+This project implements a **UDP port bridge** using Python and
+`asyncio`, allowing Windows applications to communicate with UDP
+services running inside WSL.
 
-The UDP Windows-to-WSL Bridge acts as an intermediary between UDP clients
-on Windows and a UDP service running inside WSL.
+------------------------------------------------------------------------
 
+## ✨ Features
 
-1. The bridge listens on a specified UDP port on the Windows host.
-2. When a UDP packet is received, the client’s source IP and port are
-   used to identify the session.
-3. If no existing session is found, a new UDP connection to the WSL
-   host is created for that client.
-4. Incoming packets are forwarded to the configured UDP port inside WSL.
-5. Responses from the WSL service are relayed back to the original client.
-6. Each client session tracks its last activity timestamp.
-7. Idle sessions are automatically closed after a configurable timeout.
+-   🔄 UDP forwarding (Windows → WSL)
+-   ⚡ Fully asynchronous (`asyncio`)
+-   👥 Per-client session isolation
+-   🧹 Automatic idle session cleanup
+-   📦 Zero external dependencies
+-   🧵 Supports concurrent UDP clients
+-   🪶 Lightweight & efficient
 
-This design allows multiple clients to communicate concurrently with
-UDP services running inside WSL while maintaining isolation between
-client sessions.
+------------------------------------------------------------------------
+
+## 🏗 Architecture
+
+    Windows UDP Client
+            │
+            ▼
+    ┌────────────────────────┐
+    │ UDP Bridge (Windows)   │
+    │  - Session mapping     │
+    │  - Activity tracking   │
+    │  - Async forwarding    │
+    └────────────────────────┘
+            │
+            ▼
+    WSL UDP Service
+
+------------------------------------------------------------------------
+
+## 🔎 How It Works
+
+1.  The bridge listens on a UDP port on Windows.
+2.  When a packet is received:
+    -   The client's source IP + port identifies the session.
+3.  If no session exists:
+    -   A new UDP socket is created toward WSL.
+4.  Packets are forwarded to the WSL service.
+5.  Responses are relayed back to the original client.
+6.  Idle sessions are automatically cleaned up after a configurable
+    timeout.
+
+------------------------------------------------------------------------
+
+## ⚙️ Installation
+
+``` bash
+git clone https://github.com/your-username/udp-windows-wsl-bridge.git
+cd udp-windows-wsl-bridge
+```
+
+Requires:
+
+-   Python 3.9+
+-   Windows with WSL installed
+
+------------------------------------------------------------------------
+
+## ▶️ Usage
+
+``` bash
+python bridge.py     --listen-host 0.0.0.0     --listen-port 9000     --wsl-host 172.25.224.1     --wsl-port 9000     --timeout 60
+```
+
+### Parameters
+
+  Parameter         Description
+  ----------------- --------------------------------
+  `--listen-host`   Windows host IP to bind
+  `--listen-port`   UDP port to listen on
+  `--wsl-host`      WSL internal IP
+  `--wsl-port`      Target UDP port inside WSL
+  `--timeout`       Idle session timeout (seconds)
+
+------------------------------------------------------------------------
+
+## 🧠 Design Decisions
+
+### Why per-client session mapping?
+
+UDP is connectionless, but many protocols behave in a request--response
+pattern.\
+Maintaining per-client sockets prevents:
+
+-   Packet mixing between clients
+-   Session state conflicts
+-   Response routing errors
+
+------------------------------------------------------------------------
+
+### Why asyncio?
+
+-   Non-blocking I/O
+-   Efficient handling of multiple concurrent clients
+-   Minimal resource overhead
+-   Clean event-driven architecture
+
+------------------------------------------------------------------------
+
+## 🛠 Use Cases
+
+-   🎮 Game server development inside WSL
+-   📡 Custom UDP protocols
+-   🌐 DNS testing
+-   📊 Telemetry services
+-   🔬 Network tool development
+
+------------------------------------------------------------------------
+
+## 📈 Future Improvements
+
+-   [ ] Logging system
+-   [ ] Metrics / monitoring endpoint
+-   [ ] Docker support
+-   [ ] Windows service integration
+-   [ ] Configuration file support
+
+------------------------------------------------------------------------
+
+## 📄 License
+
+MIT License
+
+------------------------------------------------------------------------
+
+# ⭐ Contributing
+
+Contributions, issues, and feature requests are welcome.
+
+If you find this useful, consider giving it a ⭐ on GitHub.
