@@ -91,15 +91,14 @@ python udp_win_wsl_port_bridge.py   --listen-host 0.0.0.0     --listen-port 9000
 
 ### Parameters
 
-  Parameter         Description
-  ----------------- --------------------------------
-  `--listen-host`   Windows host IP to bind
-  `--listen-port`   UDP port to listen on
-  `--wsl-host`      WSL internal IP
-  `--wsl-port`      Target UDP port inside WSL
-  `--timeout`       Idle session timeout (seconds)
+| Argument        | Description                              | Example        |
+|---------------|------------------------------------------|---------------|
+| `--listen-host` | Windows host IP address to bind         | `0.0.0.0`     |
+| `--listen-port` | UDP port to listen on (Windows side)    | `9000`        |
+| `--wsl-host`    | Internal WSL IP address                 | `172.25.224.1`|
+| `--wsl-port`    | Target UDP port inside WSL              | `9000`        |
+| `--timeout`     | Idle session timeout (in seconds)       | `60`          |
 
-------------------------------------------------------------------------
 
 ## 🧠 Design Decisions
 
