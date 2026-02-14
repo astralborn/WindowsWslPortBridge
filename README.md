@@ -134,16 +134,6 @@ Maintaining per-client sockets prevents:
 
 ------------------------------------------------------------------------
 
-## 📈 Future Improvements
-
--   [ ] Logging system
--   [ ] Metrics / monitoring endpoint
--   [ ] Docker support
--   [ ] Windows service integration
--   [ ] Configuration file support
-
-------------------------------------------------------------------------
-
 ## 📄 License
 
 MIT License
