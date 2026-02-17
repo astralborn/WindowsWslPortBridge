@@ -76,10 +76,8 @@ class UDPBridgeProtocol(asyncio.DatagramProtocol):
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         self.transport = transport
-        log(
-            f"Listening on {transport.get_extra_info('sockname')} "
-            f"-> WSL {self.service.wsl_host}:{self.service.wsl_port}"
-        )
+        log(f"Listening on {transport.get_extra_info('sockname')} "
+            f"-> WSL {self.service.wsl_host}:{self.service.wsl_port}")
 
     def datagram_received(self, data: bytes, addr: ClientAddr) -> None:
         asyncio.create_task(self.service.forward_to_wsl(data, addr))
@@ -153,9 +151,11 @@ class UDPBridgeService:
         while not self.shutdown_event.is_set():
             now = time.time()
             stale = [addr for addr, s in self.sessions.items() if now - s.last_active > self.idle_timeout]
+
             for addr in stale:
                 log(f"Closing idle session: {addr}")
                 self.sessions.pop(addr).transport.close()
+
             await asyncio.sleep(1)
 
     async def shutdown(self) -> None:
@@ -190,7 +190,7 @@ async def main() -> None:
         idle_timeout=args.timeout,
     )
 
-    # Windows-only Ctrl+C handling
+    # Ctrl+C handling
     signal.signal(signal.SIGINT, lambda *_: asyncio.create_task(service.shutdown()))
 
     await service.start()
