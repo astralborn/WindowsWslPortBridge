@@ -6,7 +6,6 @@
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)
 ![Asyncio](https://img.shields.io/badge/Async-asyncio-green.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%2B%20WSL-lightgrey.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ------------------------------------------------------------------------
 
@@ -130,17 +129,3 @@ Maintaining per-client sockets prevents:
 -   🌐 DNS testing
 -   📊 Telemetry services
 -   🔬 Network tool development
-
-------------------------------------------------------------------------
-
-## 📄 License
-
-MIT License
-
-------------------------------------------------------------------------
-
-# ⭐ Contributing
-
-Contributions, issues, and feature requests are welcome.
-
-If you find this useful, consider giving it a ⭐ on GitHub.
