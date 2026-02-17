@@ -28,11 +28,11 @@ The WSL IP address can be specified manually or auto-detected using
 `wsl hostname -I`.
 """
 
+
 import argparse
 import asyncio
 import signal
 import subprocess
-import sys
 import time
 from dataclasses import dataclass
 from typing import Dict, Tuple, Optional
@@ -41,10 +41,12 @@ ClientAddr = Tuple[str, int]
 
 
 def log(message: str) -> None:
+    """Simple timestamped logging."""
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {message}")
 
 
 def detect_wsl_ip() -> str:
+    """Detect the first IP address of the running WSL instance."""
     try:
         result = subprocess.run(
             ["wsl", "hostname", "-I"],
@@ -105,13 +107,8 @@ class WSLProtocol(asyncio.DatagramProtocol):
 
 
 class UDPBridgeService:
-    def __init__(
-        self,
-        wsl_host: str,
-        listen_port: int,
-        wsl_port: int,
-        idle_timeout: float,
-    ) -> None:
+    """Main service handling UDP forwarding and session management."""
+    def __init__(self, wsl_host: str, listen_port: int, wsl_port: int, idle_timeout: float) -> None:
         self.wsl_host = wsl_host
         self.listen_port = listen_port
         self.wsl_port = wsl_port
@@ -121,6 +118,7 @@ class UDPBridgeService:
         self.bridge_transport: Optional[asyncio.DatagramTransport] = None
 
     async def start(self) -> None:
+        """Start the bridge service and wait until shutdown."""
         loop = asyncio.get_running_loop()
         self.bridge_transport, _ = await loop.create_datagram_endpoint(
             lambda: UDPBridgeProtocol(self),
@@ -131,6 +129,7 @@ class UDPBridgeService:
         await self.shutdown_event.wait()
 
     async def forward_to_wsl(self, data: bytes, client: ClientAddr) -> None:
+        """Forward received client data to WSL and create session if needed."""
         if client not in self.sessions:
             transport, protocol = await asyncio.get_running_loop().create_datagram_endpoint(
                 lambda: WSLProtocol(client, self.bridge_transport),
@@ -150,22 +149,26 @@ class UDPBridgeService:
         log(f"{client} -> WSL ({len(data)} bytes)")
 
     async def _cleanup_loop(self) -> None:
+        """Periodically remove idle sessions."""
         while not self.shutdown_event.is_set():
             now = time.time()
-            stale = [
-                addr for addr, s in self.sessions.items()
-                if now - s.last_active > self.idle_timeout
-            ]
+            stale = [addr for addr, s in self.sessions.items() if now - s.last_active > self.idle_timeout]
             for addr in stale:
                 log(f"Closing idle session: {addr}")
                 self.sessions.pop(addr).transport.close()
             await asyncio.sleep(1)
 
-    def shutdown(self) -> None:
+    async def shutdown(self) -> None:
+        """Shutdown the bridge service and close all sessions."""
+        if self.shutdown_event.is_set():
+            return
+
         log("Shutting down bridge")
         self.shutdown_event.set()
+
         for session in self.sessions.values():
             session.transport.close()
+
         if self.bridge_transport:
             self.bridge_transport.close()
 
@@ -187,8 +190,8 @@ async def main() -> None:
         idle_timeout=args.timeout,
     )
 
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.SIGINT, service.shutdown)
+    # Windows-only Ctrl+C handling
+    signal.signal(signal.SIGINT, lambda *_: asyncio.create_task(service.shutdown()))
 
     await service.start()
 
