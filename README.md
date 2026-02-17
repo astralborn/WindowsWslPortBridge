@@ -85,7 +85,7 @@ Requires:
 ## ▶️ Usage
 
 ``` bash
-python udp_win_wsl_port_bridge.py   --listen-host 0.0.0.0     --listen-port 9000     --wsl-host 172.25.224.1     --wsl-port 9000     --timeout 60
+python udp_win_wsl_port_bridge.py   --listen-host 0.0.0.0     --listen-port 5060     --wsl-host 172.25.224.1     --wsl-port 5060     --timeout 60
 ```
 
 ### Parameters
