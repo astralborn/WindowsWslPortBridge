@@ -1,0 +1,3 @@
+# UDP Windows-to-WSL Port Bridge
+# No external dependencies required - uses only Python standard library
+# Python 3.9+ required for asyncio datagram endpoints
