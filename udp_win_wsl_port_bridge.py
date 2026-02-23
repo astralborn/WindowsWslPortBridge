@@ -48,6 +48,11 @@ __license__ = "MIT"
 
 
 def setup_logging(level: str = "INFO") -> None:
+    """Setup logging configuration.
+    
+    :param level: Logging level (DEBUG, INFO, WARNING, ERROR)
+    :return: None
+    """
     logging.basicConfig(
         level=getattr(logging, level.upper()),
         format='[%(asctime)s] %(levelname)s: %(message)s',
@@ -55,10 +60,21 @@ def setup_logging(level: str = "INFO") -> None:
     )
 
 def log(message: str, level: str = "INFO") -> None:
+    """Log a message with specified level.
+    
+    :param message: Message to log
+    :param level: Logging level (DEBUG, INFO, WARNING, ERROR)
+    :return: None
+    """
     getattr(logging, level.lower())(message)
 
 
 def detect_wsl_ip() -> str:
+    """Detect WSL IP address using wsl hostname command.
+    
+    :return: WSL IP address as string
+    :raises SystemExit: If WSL detection fails or times out
+    """
     try:
         result = subprocess.run(
             ["wsl", "hostname", "-I"],
@@ -92,10 +108,20 @@ class ClientSession:
 
 class UDPBridgeProtocol(asyncio.DatagramProtocol):
     def __init__(self, service: "UDPBridgeService") -> None:
+        """Initialize UDP bridge protocol.
+        
+        :param service: UDP bridge service instance
+        :return: None
+        """
         self.service = service
         self.transport: Optional[asyncio.DatagramTransport] = None
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
+        """Called when connection is established.
+        
+        :param transport: Datagram transport instance
+        :return: None
+        """
         self.transport = transport
         log(
             f"Listening on {transport.get_extra_info('sockname')} "
@@ -103,23 +129,51 @@ class UDPBridgeProtocol(asyncio.DatagramProtocol):
         )
 
     def datagram_received(self, data: bytes, addr: ClientAddr) -> None:
+        """Handle incoming UDP datagram.
+        
+        :param data: Received data
+        :param addr: Source address
+        :return: None
+        """
         asyncio.create_task(self.service.forward_to_wsl(data, addr))
 
     def error_received(self, exc: Exception) -> None:
+        """Handle socket error.
+        
+        :param exc: Exception that occurred
+        :return: None
+        """
         log(f"Bridge socket error: {exc}", "ERROR")
 
 
 class WSLProtocol(asyncio.DatagramProtocol):
     def __init__(self, client_addr: ClientAddr, bridge_transport: asyncio.DatagramTransport, service: "UDPBridgeService") -> None:
+        """Initialize WSL protocol for client session.
+        
+        :param client_addr: Client address tuple
+        :param bridge_transport: Bridge transport for sending responses
+        :param service: UDP bridge service instance
+        :return: None
+        """
         self.client_addr = client_addr
         self.bridge_transport = bridge_transport
         self.service = service
         self.last_active = time.time()
 
     def refresh(self) -> None:
+        """Refresh the last active timestamp.
+        
+        :return: None
+        """
         self.last_active = time.time()
 
     def datagram_received(self, data: bytes, addr: ClientAddr) -> None:
+        """Handle response from WSL service.
+        
+        :param data: Response data from WSL
+        :param addr: WSL service address
+        :return: None
+        """
         self.refresh()
         self.bridge_transport.sendto(data, self.client_addr)
         # Update session statistics
@@ -131,6 +185,11 @@ class WSLProtocol(asyncio.DatagramProtocol):
         log(f"WSL -> {self.client_addr} ({len(data)} bytes)", "DEBUG")
 
     def error_received(self, exc: Exception) -> None:
+        """Handle WSL session error.
+        
+        :param exc: Exception that occurred
+        :return: None
+        """
         log(f"WSL session error {self.client_addr}: {exc}", "ERROR")
 
 
@@ -145,6 +204,17 @@ class UDPBridgeService:
         retry_attempts: int = 3,
         retry_delay: float = 1.0,
     ) -> None:
+        """Initialize UDP bridge service.
+        
+        :param wsl_host: WSL IP address
+        :param listen_port: Port to listen on Windows
+        :param wsl_port: Target port in WSL
+        :param idle_timeout: Session idle timeout in seconds
+        :param max_sessions: Maximum concurrent sessions
+        :param retry_attempts: Connection retry attempts
+        :param retry_delay: Delay between retries in seconds
+        :return: None
+        """
         self.wsl_host = wsl_host
         self.listen_port = listen_port
         self.wsl_port = wsl_port
@@ -160,6 +230,10 @@ class UDPBridgeService:
         self.total_packets_received = 0
 
     async def start(self) -> None:
+        """Start the UDP bridge service.
+        
+        :return: None
+        """
         loop = asyncio.get_running_loop()
         self.bridge_transport, _ = await loop.create_datagram_endpoint(
             lambda: UDPBridgeProtocol(self),
@@ -170,6 +244,12 @@ class UDPBridgeService:
         await self.shutdown_event.wait()
 
     async def forward_to_wsl(self, data: bytes, client: ClientAddr) -> None:
+        """Forward UDP packet from client to WSL.
+        
+        :param data: UDP packet data
+        :param client: Client address tuple (IP, port)
+        :return: None
+        """
         if len(self.sessions) >= self.max_sessions and client not in self.sessions:
             log(f"Session limit reached, rejecting {client}", "WARNING")
             return
@@ -211,6 +291,10 @@ class UDPBridgeService:
             await self._cleanup_session(client)
 
     async def _cleanup_loop(self) -> None:
+        """Background loop to cleanup idle sessions.
+        
+        :return: None
+        """
         while not self.shutdown_event.is_set():
             now = time.time()
             stale = [
@@ -228,6 +312,11 @@ class UDPBridgeService:
             await asyncio.sleep(1)
     
     async def _cleanup_session(self, addr: ClientAddr) -> None:
+        """Cleanup and close a specific session.
+        
+        :param addr: Client address to cleanup
+        :return: None
+        """
         if addr in self.sessions:
             log(f"Closing session: {addr}", "DEBUG")
             session = self.sessions.pop(addr)
@@ -239,6 +328,10 @@ class UDPBridgeService:
                 log(f"Error closing session {addr}: {exc}", "WARNING")
 
     def shutdown(self) -> None:
+        """Shutdown the bridge service gracefully.
+        
+        :return: None
+        """
         log("Shutting down bridge")
         self.shutdown_event.set()
         log(f"Final stats: {self.total_sessions_created} sessions created, "
@@ -253,6 +346,10 @@ class UDPBridgeService:
 
 
 async def main() -> None:
+    """Main entry point for the UDP bridge service.
+    
+    :return: None
+    """
     parser = argparse.ArgumentParser(description="UDP Windows-to-WSL Bridge")
     parser.add_argument("--wsl-host", help="WSL IP address")
     parser.add_argument("--listen-port", type=int, default=5060)
