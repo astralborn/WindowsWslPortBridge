@@ -37,7 +37,7 @@ dev = [
 ]
 
 [project.scripts]
-udp-bridge = "src:run"
+udp-bridge = "src.__main__:run"
 
 [project.urls]
 Homepage = "https://github.com/stanisln/WindowsWslPortBridge"

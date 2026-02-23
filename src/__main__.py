@@ -30,16 +30,17 @@ The WSL IP address can be specified manually or auto-detected using
 
 import asyncio
 
-from .cli import parse_args, create_config_from_args
-from .service import UDPBridgeService
-from .logging_utils import setup_logging, log
-
 
 async def main() -> None:
     """Main entry point for the UDP bridge service.
 
     :return: None
     """
+    # Import here to avoid circular import warning when using python -m src
+    from .cli import parse_args, create_config_from_args
+    from .service import UDPBridgeService
+    from .logging_utils import setup_logging, log
+
     args = parse_args()
 
     # Setup logging
@@ -61,6 +62,12 @@ async def main() -> None:
     log(f"Starting UDP bridge: {config.listen_port} -> {config.wsl_host}:{config.wsl_port}")
     try:
         await service.start()
+    except OSError as exc:
+        if exc.winerror == 10048:
+            log(f"Port {config.listen_port} is already in use. Check if another instance is running.", "ERROR")
+        else:
+            log(f"OS error: {exc}", "ERROR")
+        service.shutdown()
     except (KeyboardInterrupt, asyncio.CancelledError):
         log("Keyboard interrupt received")
         service.shutdown()

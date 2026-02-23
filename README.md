@@ -31,6 +31,7 @@ services running inside WSL.
 
 - [📌 Overview](#-overview)
 - [✨ Features](#-features)
+- [🎬 Quick Demo](#-quick-demo)
 - [🏗 Architecture](#-architecture)
 - [🔎 How It Works](#-how-it-works)
 - [⚙️ Installation](#️-installation)
@@ -41,6 +42,7 @@ services running inside WSL.
 - [🐛 Troubleshooting](#-troubleshooting)
 - [📄 License](#-license)
 - [⭐ Contributing](#-contributing)
+- [🔗 Related Projects](#-related-projects)
 
 ------------------------------------------------------------------------
 
@@ -62,20 +64,42 @@ services running inside WSL.
 
 ------------------------------------------------------------------------
 
+## 🎬 Quick Demo
+
+```bash
+# Terminal 1: Start UDP server in WSL
+wsl -e bash -c "nc -u -l -p 5060"
+
+# Terminal 2: Start the bridge
+python -m src --log-level DEBUG
+
+# Terminal 3: Send UDP packet from Windows
+python -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.sendto(b'Hello WSL!', ('127.0.0.1', 5060))"
+```
+
+------------------------------------------------------------------------
+
 ## 🏗 Architecture
 
-    Windows UDP Client
-            │
-            ▼
-    ┌────────────────────────┐
-    │ UDP Bridge (Windows)   │
-    │  - Session mapping     │
-    │  - Activity tracking   │
-    │  - Async forwarding    │
-    └────────────────────────┘
-            │
-            ▼
-    WSL UDP Service
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         WINDOWS HOST                            │
+│  ┌─────────────┐         ┌──────────────────────────────────┐  │
+│  │ UDP Client  │────────▶│     UDP Bridge (this project)    │  │
+│  │ (App/Game)  │◀────────│  • Async session management      │  │
+│  └─────────────┘         │  • Per-client isolation          │  │
+│                          │  • Auto cleanup & retry          │  │
+│                          └──────────────┬───────────────────┘  │
+│                                         │                       │
+│  ┌──────────────────────────────────────┼───────────────────┐  │
+│  │                      WSL2            │                    │  │
+│  │                          ┌───────────▼───────────┐        │  │
+│  │                          │    UDP Service        │        │  │
+│  │                          │  (Your application)   │        │  │
+│  │                          └───────────────────────┘        │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ------------------------------------------------------------------------
 
@@ -98,8 +122,8 @@ services running inside WSL.
 ### Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/stanislav-nikolaievskyi/udp-windows-wsl-bridge.git
-cd udp-windows-wsl-bridge
+git clone https://github.com/stanislav-nikolaievskyi/WindowsWslPortBridge.git
+cd WindowsWslPortBridge
 
 # Run directly (no dependencies required)
 python -m src
@@ -243,22 +267,34 @@ Maintaining per-client sockets prevents:
 
 ### Common Issues
 
+#### "Port already in use" (WinError 10048)
+```bash
+# Check what's using the port
+netstat -ano | findstr :5060
+
+# Kill the process (replace PID)
+taskkill /PID <PID> /F
+
+# Or use a different port
+python -m src --listen-port 5061
+```
+
 #### "WSL hostname command timed out"
 ```bash
 # Fix: Manually specify WSL IP
-python udp_win_wsl_port_bridge.py --wsl-host 172.25.224.1
+python -m src --wsl-host 172.25.224.1
 ```
 
 #### "Session limit reached"
 ```bash
 # Fix: Increase session limit or check for connection leaks
-python udp_win_wsl_port_bridge.py --max-sessions 5000 --log-level DEBUG
+python -m src --max-sessions 5000 --log-level DEBUG
 ```
 
 #### "Failed to create session"
 ```bash
 # Fix: Increase retry attempts or check WSL service
-python udp_win_wsl_port_bridge.py --retry-attempts 5 --retry-delay 2.0
+python -m src --retry-attempts 5 --retry-delay 2.0
 ```
 
 ### Getting WSL IP
@@ -272,7 +308,7 @@ wsl hostname -I
 ### Debug Mode
 Enable debug logging for detailed troubleshooting:
 ```bash
-python udp_win_wsl_port_bridge.py --log-level DEBUG
+python -m src --log-level DEBUG
 ```
 
 ------------------------------------------------------------------------
@@ -292,10 +328,10 @@ Contributions, issues, and feature requests are welcome!
 
 ### Development Setup
 ```bash
-# Clone and test
-git clone https://github.com/stanislav-nikolaievskyi/udp-windows-wsl-bridge.git
-cd udp-windows-wsl-bridge
-python udp_win_wsl_port_bridge.py --log-level DEBUG
+# Clone and install dev dependencies
+git clone https://github.com/stanislav-nikolaievskyi/WindowsWslPortBridge.git
+cd WindowsWslPortBridge
+pip install -e .[dev]
 ```
 
 ### Submitting Changes
@@ -310,5 +346,5 @@ If you find this useful, consider giving it a ⭐ on GitHub!
 
 ## 🔗 Related Projects
 
-- [netsh interface portproxy](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/netsh-interface-portproxy) - TCP-only Windows port proxy
-- [WSL2 networking](https://docs.microsoft.com/en-us/windows/wsl/networking) - Official WSL networking documentation
+- [netsh interface portproxy](https://learn.microsoft.com/en-us/windows-server/networking/technologies/netsh/netsh-interface-portproxy) - Built-in Windows TCP port proxy (no UDP support)
+- [WSL2 networking](https://learn.microsoft.com/en-us/windows/wsl/networking) - Official WSL networking documentation
