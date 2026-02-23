@@ -179,12 +179,7 @@ python -m src --listen-port 9000 --wsl-port 9000 --timeout 60 --max-sessions 200
 
 ### Production Example
 ```bash
-python -m src \
-  --listen-port 5060 \
-  --wsl-port 5060 \
-  --timeout 30 \
-  --max-sessions 5000 \
-  --log-level INFO
+python -m src --listen-port 5060 --wsl-port 5060 --timeout 30 --max-sessions 5000 --log-level INFO
 ```
 
 ### Debug Mode
@@ -216,10 +211,10 @@ python -m src --log-level DEBUG --listen-port 5060
 ### Real-time Statistics
 The bridge provides real-time monitoring:
 ```
-[2024-01-01 12:00:00] INFO: Session created: ('192.168.1.100', 12345) (total: 1)
-[2024-01-01 12:00:01] DEBUG: Active sessions: 1/1000, Total packets: 5 sent, 5 received
-[2024-01-01 12:00:30] INFO: Shutting down bridge
-[2024-01-01 12:00:30] INFO: Final stats: 1 sessions created, 5 packets sent, 5 packets received
+[2026-02-23 12:00:00] INFO: Session created: ('192.168.1.100', 12345) (total: 1)
+[2026-02-23 12:00:01] DEBUG: Active sessions: 1/1000, Total packets: 5 sent, 5 received
+[2026-02-23 12:00:30] INFO: Shutting down bridge
+[2026-02-23 12:00:30] INFO: Final stats: 1 sessions created, 5 packets sent, 5 packets received
 ```
 
 ### Graceful Shutdown
