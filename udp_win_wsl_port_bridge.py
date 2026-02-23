@@ -159,6 +159,24 @@ class WSLProtocol(asyncio.DatagramProtocol):
         self.bridge_transport = bridge_transport
         self.service = service
         self.last_active = time.time()
+        self.transport: Optional[asyncio.DatagramTransport] = None
+
+    def connection_made(self, transport: asyncio.DatagramTransport) -> None:
+        """Called when connection is established.
+
+        :param transport: Datagram transport instance
+        :return: None
+        """
+        self.transport = transport
+
+    def connection_lost(self, exc: Optional[Exception]) -> None:
+        """Called when connection is lost.
+
+        :param exc: Exception that caused the loss, or None
+        :return: None
+        """
+        if exc:
+            log(f"Connection lost for {self.client_addr}: {exc}", "WARNING")
 
     def refresh(self) -> None:
         """Refresh the last active timestamp.
@@ -177,11 +195,10 @@ class WSLProtocol(asyncio.DatagramProtocol):
         self.refresh()
         self.bridge_transport.sendto(data, self.client_addr)
         # Update session statistics
-        for session in self.service.sessions.values():
-            if session.protocol == self:
-                session.packets_received += 1
-                self.service.total_packets_received += 1
-                break
+        session = self.service.sessions.get(self.client_addr)
+        if session:
+            session.packets_received += 1
+            self.service.total_packets_received += 1
         log(f"WSL -> {self.client_addr} ({len(data)} bytes)", "DEBUG")
 
     def error_received(self, exc: Exception) -> None:
@@ -225,6 +242,7 @@ class UDPBridgeService:
         self.sessions: Dict[ClientAddr, ClientSession] = {}
         self.shutdown_event = asyncio.Event()
         self.bridge_transport: Optional[asyncio.DatagramTransport] = None
+        self._cleanup_task: Optional[asyncio.Task] = None
         self.total_sessions_created = 0
         self.total_packets_forwarded = 0
         self.total_packets_received = 0
@@ -240,7 +258,7 @@ class UDPBridgeService:
             local_addr=("0.0.0.0", self.listen_port),
         )
 
-        asyncio.create_task(self._cleanup_loop())
+        self._cleanup_task = asyncio.create_task(self._cleanup_loop())
         await self.shutdown_event.wait()
 
     async def forward_to_wsl(self, data: bytes, client: ClientAddr) -> None:
@@ -256,10 +274,13 @@ class UDPBridgeService:
             
         if client not in self.sessions:
             # Create new session with retry logic
+            transport: Optional[asyncio.DatagramTransport] = None
+            protocol: Optional[WSLProtocol] = None
             for attempt in range(self.retry_attempts):
                 try:
+                    # Capture client in default argument to avoid closure bug
                     transport, protocol = await asyncio.get_running_loop().create_datagram_endpoint(
-                        lambda: WSLProtocol(client, self.bridge_transport, self),
+                        lambda c=client: WSLProtocol(c, self.bridge_transport, self),
                         remote_addr=(self.wsl_host, self.wsl_port),
                     )
                     break
@@ -270,6 +291,11 @@ class UDPBridgeService:
                     log(f"Session creation attempt {attempt + 1} failed for {client}: {exc}, retrying...", "WARNING")
                     await asyncio.sleep(self.retry_delay)
             
+            # Safety check: ensure transport and protocol were created
+            if transport is None or protocol is None:
+                log(f"Failed to create session for {client}: transport or protocol is None", "ERROR")
+                return
+
             self.sessions[client] = ClientSession(
                 transport=transport,
                 protocol=protocol,
@@ -334,6 +360,11 @@ class UDPBridgeService:
         """
         log("Shutting down bridge")
         self.shutdown_event.set()
+
+        # Cancel cleanup task
+        if self._cleanup_task:
+            self._cleanup_task.cancel()
+
         log(f"Final stats: {self.total_sessions_created} sessions created, "
             f"{self.total_packets_forwarded} packets sent, {self.total_packets_received} packets received")
         
