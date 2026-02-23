@@ -3,7 +3,7 @@
 > A production-ready async UDP bridge enabling seamless communication between Windows
 > and WSL with enterprise-grade features.
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
 ![Asyncio](https://img.shields.io/badge/Async-asyncio-green.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%2B%20WSL-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
@@ -102,17 +102,37 @@ git clone https://github.com/stanislav-nikolaievskyi/udp-windows-wsl-bridge.git
 cd udp-windows-wsl-bridge
 
 # Run directly (no dependencies required)
-python udp_win_wsl_port_bridge.py
+python -m src
+```
+
+### Install as Package (Optional)
+```bash
+pip install -e .
+udp-bridge --help
 ```
 
 ### Requirements
 
-- **Python 3.9+** (for asyncio datagram endpoints)
+- **Python 3.8+** (for asyncio datagram endpoints)
 - **Windows 10/11** with WSL2 installed
 - **WSL instance** running UDP services
 
 ### No External Dependencies
 This bridge uses only Python standard library modules - no `pip install` required!
+
+### Project Structure
+```
+src/
+├── __init__.py       # Package exports
+├── __main__.py       # Entry point
+├── cli.py            # Argument parsing
+├── config.py         # Configuration dataclass
+├── logging_utils.py  # Logging utilities
+├── models.py         # Data models (ClientSession)
+├── protocols.py      # UDP protocol implementations
+├── service.py        # Main UDPBridgeService
+└── utils.py          # WSL IP detection
+```
 
 ------------------------------------------------------------------------
 
@@ -120,22 +140,22 @@ This bridge uses only Python standard library modules - no `pip install` require
 
 ### Basic Usage
 ```bash
-python udp_win_wsl_port_bridge.py
+python -m src
 ```
 
 ### Custom WSL IP
 ```bash
-python udp_win_wsl_port_bridge.py --wsl-host 172.25.224.1
+python -m src --wsl-host 172.25.224.1
 ```
 
 ### Advanced Configuration
 ```bash
-python udp_win_wsl_port_bridge.py --listen-port 9000 --wsl-port 9000 --timeout 60 --max-sessions 2000
+python -m src --listen-port 9000 --wsl-port 9000 --timeout 60 --max-sessions 2000
 ```
 
 ### Production Example
 ```bash
-python udp_win_wsl_port_bridge.py \
+python -m src \
   --listen-port 5060 \
   --wsl-port 5060 \
   --timeout 30 \
@@ -145,7 +165,7 @@ python udp_win_wsl_port_bridge.py \
 
 ### Debug Mode
 ```bash
-python udp_win_wsl_port_bridge.py --log-level DEBUG --listen-port 5060
+python -m src --log-level DEBUG --listen-port 5060
 ```
 
 ### Parameters
