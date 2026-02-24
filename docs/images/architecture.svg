@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 540" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow-right" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4A90D9"/>
+    </marker>
+    <marker id="arrow-left" markerWidth="10" markerHeight="7" refX="1" refY="3.5" orient="auto">
+      <polygon points="10 0, 0 3.5, 10 7" fill="#7EC8A0"/>
+    </marker>
+    <marker id="arrow-down" markerWidth="7" markerHeight="10" refX="3.5" refY="9" orient="auto">
+      <polygon points="0 0, 7 0, 3.5 10" fill="#4A90D9"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#00000022"/>
+    </filter>
+    <linearGradient id="winGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EAF2FB"/>
+      <stop offset="100%" stop-color="#D6E8F7"/>
+    </linearGradient>
+    <linearGradient id="wslGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EAF7EE"/>
+      <stop offset="100%" stop-color="#D0EDD8"/>
+    </linearGradient>
+    <linearGradient id="bridgeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F0F6FF"/>
+    </linearGradient>
+    <linearGradient id="clientGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#EEF4FF"/>
+    </linearGradient>
+    <linearGradient id="svcGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E8F7EE"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Windows Host background -->
+  <rect x="10" y="10" width="800" height="380" rx="14" ry="14" fill="url(#winGrad)" stroke="#4A90D9" stroke-width="2" filter="url(#shadow)"/>
+  <text x="30" y="36" font-size="13" font-weight="bold" fill="#2C5F8A" letter-spacing="1">WINDOWS HOST</text>
+
+  <!-- WSL2 background -->
+  <rect x="10" y="410" width="800" height="120" rx="14" ry="14" fill="url(#wslGrad)" stroke="#3A9A5C" stroke-width="2" filter="url(#shadow)"/>
+  <text x="30" y="436" font-size="13" font-weight="bold" fill="#2A6B3E" letter-spacing="1">WSL2</text>
+
+  <!-- UDP Clients -->
+  <!-- Client 1 -->
+  <rect x="40" y="60" width="140" height="70" rx="10" fill="url(#clientGrad)" stroke="#4A90D9" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="110" y="88" text-anchor="middle" font-size="12" font-weight="bold" fill="#2C5282">UDP Client 1</text>
+  <text x="110" y="106" text-anchor="middle" font-size="10" fill="#5A7FA8">App / Game</text>
+
+  <!-- Client 2 -->
+  <rect x="40" y="155" width="140" height="70" rx="10" fill="url(#clientGrad)" stroke="#4A90D9" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="110" y="183" text-anchor="middle" font-size="12" font-weight="bold" fill="#2C5282">UDP Client 2</text>
+  <text x="110" y="201" text-anchor="middle" font-size="10" fill="#5A7FA8">App / Game</text>
+
+  <!-- Client N -->
+  <rect x="40" y="255" width="140" height="70" rx="10" fill="url(#clientGrad)" stroke="#4A90D9" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="110" y="283" text-anchor="middle" font-size="12" font-weight="bold" fill="#2C5282">UDP Client N</text>
+  <text x="110" y="301" text-anchor="middle" font-size="10" fill="#5A7FA8">App / Game</text>
+  <!-- Dots between clients -->
+  <circle cx="110" cy="237" r="3" fill="#4A90D9" opacity="0.5"/>
+  <circle cx="110" cy="248" r="3" fill="#4A90D9" opacity="0.5"/>
+
+  <!-- Bridge box -->
+  <rect x="240" y="45" width="540" height="330" rx="12" fill="url(#bridgeGrad)" stroke="#7AABDA" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="510" y="68" text-anchor="middle" font-size="13" font-weight="bold" fill="#2C5F8A">UDP Bridge Service</text>
+
+  <!-- Listener box -->
+  <rect x="262" y="80" width="220" height="80" rx="8" fill="#DDEEFF" stroke="#4A90D9" stroke-width="1.5"/>
+  <text x="372" y="106" text-anchor="middle" font-size="11" font-weight="bold" fill="#1A3A6A">UDPBridgeProtocol</text>
+  <text x="372" y="122" text-anchor="middle" font-size="10" fill="#4A6080">listen 0.0.0.0:5060</text>
+  <text x="372" y="138" text-anchor="middle" font-size="10" fill="#4A6080">datagram_received()</text>
+
+  <!-- Session Manager box -->
+  <rect x="262" y="195" width="220" height="110" rx="8" fill="#DDEEFF" stroke="#4A90D9" stroke-width="1.5"/>
+  <text x="372" y="218" text-anchor="middle" font-size="11" font-weight="bold" fill="#1A3A6A">Session Manager</text>
+  <text x="372" y="237" text-anchor="middle" font-size="10" fill="#4A6080">• per-client socket map</text>
+  <text x="372" y="253" text-anchor="middle" font-size="10" fill="#4A6080">• idle timeout &amp; cleanup</text>
+  <text x="372" y="269" text-anchor="middle" font-size="10" fill="#4A6080">• retry logic &amp; limits</text>
+  <text x="372" y="285" text-anchor="middle" font-size="10" fill="#4A6080">• task tracking</text>
+
+  <!-- WSLProtocol boxes -->
+  <rect x="520" y="100" width="120" height="70" rx="8" fill="#E8F4FF" stroke="#4A90D9" stroke-width="1.5"/>
+  <text x="580" y="124" text-anchor="middle" font-size="11" font-weight="bold" fill="#1A3A6A">WSLProtocol</text>
+  <text x="580" y="142" text-anchor="middle" font-size="10" fill="#4A6080">client 1 socket</text>
+  <text x="580" y="158" text-anchor="middle" font-size="10" fill="#4A6080">:ephemeral</text>
+
+  <rect x="520" y="200" width="120" height="70" rx="8" fill="#E8F4FF" stroke="#4A90D9" stroke-width="1.5"/>
+  <text x="580" y="224" text-anchor="middle" font-size="11" font-weight="bold" fill="#1A3A6A">WSLProtocol</text>
+  <text x="580" y="242" text-anchor="middle" font-size="10" fill="#4A6080">client 2 socket</text>
+  <text x="580" y="258" text-anchor="middle" font-size="10" fill="#4A6080">:ephemeral</text>
+
+  <rect x="520" y="300" width="120" height="55" rx="8" fill="#E8F4FF" stroke="#4A90D9" stroke-width="1.5"/>
+  <text x="580" y="324" text-anchor="middle" font-size="11" font-weight="bold" fill="#1A3A6A">WSLProtocol</text>
+  <text x="580" y="342" text-anchor="middle" font-size="10" fill="#4A6080">client N socket</text>
+  <!-- dots -->
+  <circle cx="580" cy="285" r="3" fill="#4A90D9" opacity="0.5"/>
+  <circle cx="580" cy="293" r="3" fill="#4A90D9" opacity="0.5"/>
+
+  <!-- WSL UDP Service -->
+  <rect x="310" y="445" width="200" height="70" rx="10" fill="url(#svcGrad)" stroke="#3A9A5C" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="410" y="472" text-anchor="middle" font-size="12" font-weight="bold" fill="#1E5C35">UDP Service</text>
+  <text x="410" y="490" text-anchor="middle" font-size="10" fill="#3A7A50">your application</text>
+  <text x="410" y="506" text-anchor="middle" font-size="10" fill="#3A7A50">:5060</text>
+
+  <!-- Arrows: Clients → Bridge Listener -->
+  <!-- Client 1 → -->
+  <line x1="181" y1="95" x2="258" y2="115" stroke="#4A90D9" stroke-width="2" marker-end="url(#arrow-right)"/>
+  <text x="215" y="100" text-anchor="middle" font-size="9" fill="#2C5F8A">:5060</text>
+  <!-- ← Client 1 response -->
+  <line x1="258" y1="125" x2="181" y2="110" stroke="#7EC8A0" stroke-width="1.5" stroke-dasharray="5,3" marker-start="url(#arrow-left)"/>
+
+  <!-- Client 2 → -->
+  <line x1="181" y1="190" x2="258" y2="140" stroke="#4A90D9" stroke-width="2" marker-end="url(#arrow-right)"/>
+  <!-- ← Client 2 response -->
+  <line x1="258" y1="148" x2="181" y2="200" stroke="#7EC8A0" stroke-width="1.5" stroke-dasharray="5,3" marker-start="url(#arrow-left)"/>
+
+  <!-- Client N → -->
+  <line x1="181" y1="285" x2="258" y2="155" stroke="#4A90D9" stroke-width="2" marker-end="url(#arrow-right)"/>
+  <!-- ← Client N response -->
+  <line x1="258" y1="160" x2="181" y2="295" stroke="#7EC8A0" stroke-width="1.5" stroke-dasharray="5,3" marker-start="url(#arrow-left)"/>
+
+  <!-- Listener → Session Manager -->
+  <line x1="372" y1="162" x2="372" y2="192" stroke="#4A90D9" stroke-width="2" marker-end="url(#arrow-down)"/>
+  <text x="395" y="182" font-size="9" fill="#2C5F8A">forward_to_wsl()</text>
+
+  <!-- Session Manager → WSLProtocols -->
+  <line x1="484" y1="225" x2="517" y2="135" stroke="#4A90D9" stroke-width="1.5" marker-end="url(#arrow-right)"/>
+  <line x1="484" y1="240" x2="517" y2="237" stroke="#4A90D9" stroke-width="1.5" marker-end="url(#arrow-right)"/>
+  <line x1="484" y1="255" x2="517" y2="320" stroke="#4A90D9" stroke-width="1.5" marker-end="url(#arrow-right)"/>
+
+  <!-- WSLProtocols → WSL Service (down) -->
+  <line x1="580" y1="172" x2="460" y2="443" stroke="#4A90D9" stroke-width="1.5" marker-end="url(#arrow-down)"/>
+  <line x1="590" y1="272" x2="480" y2="443" stroke="#4A90D9" stroke-width="1.5" marker-end="url(#arrow-down)"/>
+
+  <!-- WSL Service → WSLProtocols (response, dashed) -->
+  <line x1="440" y1="443" x2="568" y2="168" stroke="#7EC8A0" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-right)"/>
+  <line x1="450" y1="443" x2="578" y2="268" stroke="#7EC8A0" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-right)"/>
+
+  <!-- Legend -->
+  <rect x="648" y="340" width="120" height="55" rx="6" fill="white" stroke="#CCCCCC" stroke-width="1"/>
+  <line x1="658" y1="358" x2="688" y2="358" stroke="#4A90D9" stroke-width="2" marker-end="url(#arrow-right)"/>
+  <text x="695" y="362" font-size="10" fill="#333">Request</text>
+  <line x1="658" y1="378" x2="688" y2="378" stroke="#7EC8A0" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-right)"/>
+  <text x="695" y="382" font-size="10" fill="#333">Response</text>
+</svg>
