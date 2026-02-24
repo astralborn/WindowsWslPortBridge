@@ -1,7 +1,6 @@
 """Protocol implementations for UDP bridge."""
 
 import asyncio
-import time
 from typing import Optional, TYPE_CHECKING
 
 from .models import ClientAddr
@@ -38,11 +37,15 @@ class UDPBridgeProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data: bytes, addr: ClientAddr) -> None:
         """Handle incoming UDP datagram.
 
+        Schedules forwarding as a tracked task so it cannot be silently
+        garbage-collected by the event loop before completion.
+
         :param data: Received data
         :param addr: Source address
         :return: None
         """
-        asyncio.create_task(self.service.forward_to_wsl(data, addr))
+        task = asyncio.create_task(self.service.forward_to_wsl(data, addr))
+        self.service.track_task(task)
 
     def error_received(self, exc: Exception) -> None:
         """Handle socket error.
@@ -54,13 +57,17 @@ class UDPBridgeProtocol(asyncio.DatagramProtocol):
 
 
 class WSLProtocol(asyncio.DatagramProtocol):
-    """Protocol for individual client sessions to WSL."""
+    """Protocol for individual client sessions to WSL.
+
+    This class no longer owns ``last_active``; the parent
+    :class:`~.models.ClientSession` is the single source of truth.
+    """
 
     def __init__(
         self,
         client_addr: ClientAddr,
         bridge_transport: asyncio.DatagramTransport,
-        service: "UDPBridgeService"
+        service: "UDPBridgeService",
     ) -> None:
         """Initialize WSL protocol for client session.
 
@@ -72,7 +79,6 @@ class WSLProtocol(asyncio.DatagramProtocol):
         self.client_addr = client_addr
         self.bridge_transport = bridge_transport
         self.service = service
-        self.last_active = time.time()
         self.transport: Optional[asyncio.DatagramTransport] = None
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
@@ -92,27 +98,23 @@ class WSLProtocol(asyncio.DatagramProtocol):
         if exc:
             log(f"Connection lost for {self.client_addr}: {exc}", "WARNING")
 
-    def refresh(self) -> None:
-        """Refresh the last active timestamp.
-
-        :return: None
-        """
-        self.last_active = time.time()
-
     def datagram_received(self, data: bytes, addr: ClientAddr) -> None:
         """Handle response from WSL service.
+
+        Refreshes the session timestamp via the session object (single
+        source of truth) and relays the response to the original client.
 
         :param data: Response data from WSL
         :param addr: WSL service address
         :return: None
         """
-        self.refresh()
-        self.bridge_transport.sendto(data, self.client_addr)
-        # Update session statistics - direct lookup
         session = self.service.sessions.get(self.client_addr)
         if session:
+            session.refresh()
             session.packets_received += 1
             self.service.total_packets_received += 1
+
+        self.bridge_transport.sendto(data, self.client_addr)
         log(f"WSL -> {self.client_addr} ({len(data)} bytes)", "DEBUG")
 
     def error_received(self, exc: Exception) -> None:

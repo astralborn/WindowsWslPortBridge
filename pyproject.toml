@@ -37,7 +37,7 @@ dev = [
 ]
 
 [project.scripts]
-udp-bridge = "src.__main__:run"
+udp-bridge = "udp_win_wsl_bridge.__main__:run"
 
 [project.urls]
 Homepage = "https://github.com/stanisln/WindowsWslPortBridge"
@@ -46,7 +46,7 @@ Issues = "https://github.com/stanisln/WindowsWslPortBridge/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*"]
+include = ["udp_win_wsl_bridge*"]
 
 [tool.mypy]
 python_version = "3.8"
@@ -64,5 +64,5 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["udp_win_wsl_bridge/tests"]
 

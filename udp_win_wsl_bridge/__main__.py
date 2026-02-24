@@ -29,6 +29,29 @@ The WSL IP address can be specified manually or auto-detected using
 """
 
 import asyncio
+import os
+import sys
+
+# ---------------------------------------------------------------------------
+# Support BOTH run modes:
+#   python -m udp_win_wsl_bridge        (standard, __package__ is set)
+#   python udp_win_wsl_bridge/__main__.py  (direct, __package__ is None)
+#
+# When run directly Python sets __package__ to None, which breaks relative
+# imports.  We detect this, insert the project root onto sys.path, and
+# re-launch via runpy so the rest of the file executes with __package__
+# correctly set to "udp_win_wsl_bridge".
+# ---------------------------------------------------------------------------
+if __package__ is None:
+    # __file__ → .../udp_win_wsl_bridge/__main__.py
+    # parent   → .../udp_bridge_pkg   (the project root)
+    _pkg_dir = os.path.dirname(os.path.abspath(__file__))
+    _root_dir = os.path.dirname(_pkg_dir)
+    if _root_dir not in sys.path:
+        sys.path.insert(0, _root_dir)
+    import runpy
+    runpy.run_module("udp_win_wsl_bridge", run_name="__main__", alter_sys=True)
+    sys.exit(0)
 
 
 async def main() -> None:
@@ -36,7 +59,6 @@ async def main() -> None:
 
     :return: None
     """
-    # Import here to avoid circular import warning when using python -m src
     from .cli import parse_args, create_config_from_args
     from .service import UDPBridgeService
     from .logging_utils import setup_logging, log
@@ -63,17 +85,17 @@ async def main() -> None:
     try:
         await service.start()
     except OSError as exc:
-        if exc.winerror == 10048:
+        if hasattr(exc, "winerror") and exc.winerror == 10048:
             log(f"Port {config.listen_port} is already in use. Check if another instance is running.", "ERROR")
         else:
             log(f"OS error: {exc}", "ERROR")
-        service.shutdown()
+        await service.async_shutdown()
     except (KeyboardInterrupt, asyncio.CancelledError):
         log("Keyboard interrupt received")
-        service.shutdown()
+        await service.async_shutdown()
     except Exception as exc:
         log(f"Unexpected error: {exc}", "ERROR")
-        service.shutdown()
+        await service.async_shutdown()
         raise
 
 
@@ -84,4 +106,3 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
-

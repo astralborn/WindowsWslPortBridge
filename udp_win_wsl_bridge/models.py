@@ -13,12 +13,23 @@ ClientAddr = Tuple[str, int]
 
 @dataclass
 class ClientSession:
-    """Represents a client session with WSL."""
+    """Represents a client session with WSL.
+
+    ``last_active`` is the single source of truth for session activity.
+    Always update it via :meth:`refresh` rather than writing the field directly.
+    """
 
     transport: "asyncio.DatagramTransport"
     protocol: "WSLProtocol"
-    last_active: float
+    last_active: float = field(default_factory=time.time)
     created_at: float = field(default_factory=time.time)
     packets_forwarded: int = 0
     packets_received: int = 0
+
+    def refresh(self) -> None:
+        """Update last_active to the current time.
+
+        :return: None
+        """
+        self.last_active = time.time()
 

@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
         "--retry-attempts",
         type=int,
         default=3,
-        help="Connection retry attempts"
+        help="Maximum connection attempts per session (must be >= 1)"
     )
     parser.add_argument(
         "--retry-delay",
@@ -76,8 +76,11 @@ def create_config_from_args(args: argparse.Namespace) -> BridgeConfig:
     :raises SystemExit: If configuration is invalid
     """
     try:
-        wsl_host = args.wsl_host or detect_wsl_ip()
-        ipaddress.ip_address(wsl_host)
+        if args.wsl_host:
+            wsl_host = args.wsl_host
+            ipaddress.ip_address(wsl_host)  # Validate early
+        else:
+            wsl_host = detect_wsl_ip()  # Raises RuntimeError on failure
 
         config = BridgeConfig(
             wsl_host=wsl_host,
@@ -92,7 +95,7 @@ def create_config_from_args(args: argparse.Namespace) -> BridgeConfig:
         config.validate()
         return config
 
-    except Exception as exc:
-        log(f"Configuration validation failed: {exc}", "ERROR")
+    except (ValueError, RuntimeError) as exc:
+        log(f"Configuration error: {exc}", "ERROR")
         sys.exit(1)
 

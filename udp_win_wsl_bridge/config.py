@@ -29,7 +29,7 @@ class BridgeConfig:
             raise ValueError("Timeout must be positive")
         if self.max_sessions <= 0:
             raise ValueError("Max sessions must be positive")
-        if self.retry_attempts <= 0:
-            raise ValueError("Retry attempts must be positive")
+        if self.retry_attempts < 1:
+            raise ValueError("retry_attempts must be >= 1 (use 1 for a single attempt with no retries)")
         if self.retry_delay < 0:
             raise ValueError("Retry delay must be non-negative")
