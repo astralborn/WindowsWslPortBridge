@@ -170,7 +170,7 @@ sequenceDiagram
 
 ```powershell
 # Clone the repository
-git clone https://github.com/stanisln/WindowsWslPortBridge.git
+git clone https://github.com/astralborn/WindowsWslPortBridge.git
 cd WindowsWslPortBridge
 
 # Run directly — no pip install required
@@ -321,7 +321,6 @@ pytest
 # Run with verbose output
 pytest -v
 
-
 # Run a specific test file
 pytest tests/test_service.py
 pytest tests/test_protocols.py
@@ -447,7 +446,7 @@ Contributions, issues, and feature requests are welcome!
 ### Development Setup
 
 ```powershell
-git clone https://github.com/stanisln/WindowsWslPortBridge.git
+git clone https://github.com/astralborn/WindowsWslPortBridge.git
 cd WindowsWslPortBridge
 pip install -e .[dev]
 pytest
