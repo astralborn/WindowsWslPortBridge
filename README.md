@@ -4,10 +4,13 @@
 > and WSL with enterprise-grade features.
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
-![Asyncio](https://img.shields.io/badge/Async-asyncio-green.svg)
+![Asyncio](https://img.shields.io/badge/asyncio-built--in-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%2B%20WSL-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Version](https://img.shields.io/badge/Version-1.0.0-brightgreen.svg)
+![pytest](https://img.shields.io/badge/pytest-9.0%2B-orange.svg)
+![pytest-asyncio](https://img.shields.io/badge/pytest--asyncio-1.3%2B-orange.svg)
+![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
 
 ------------------------------------------------------------------------
 
@@ -26,9 +29,29 @@ allowing Windows applications to communicate with UDP services running inside WS
 
 ------------------------------------------------------------------------
 
+## 📝 Summary
+
+**WindowsWslPortBridge** is a lightweight, production-ready UDP proxy written entirely
+in Python. It was built to solve a real gap in the Windows networking stack — `netsh
+interface portproxy` only supports TCP, leaving UDP without a native solution.
+
+### What it does
+The bridge listens for incoming UDP packets on a Windows port, creates a dedicated
+per-client outbound socket into WSL, forwards the packet, and relays the response back
+to the original sender. Each client gets its own isolated session so multiple concurrent
+flows never interfere with each other.
+
+
+### Test suite
+Key scenarios covered: concurrent session creation race condition, retry exhaustion,
+idle session cleanup, graceful shutdown, stale transport handling, and all CLI error paths.
+
+------------------------------------------------------------------------
+
 ## 📋 Table of Contents
 
 - [📌 Overview](#-overview)
+- [📝 Summary](#-summary)
 - [✨ Features](#-features)
 - [🎬 Quick Demo](#-quick-demo)
 - [🏗 Architecture](#-architecture)
@@ -206,7 +229,7 @@ WindowsWslPortBridge/
 ├── docs/
 │   └── images/
 │       └── architecture.svg        ← component diagram
-├── tests/                          ← test suite (64 tests)
+├── tests/                          ← test suite (66 tests)
 │   ├── __init__.py
 │   ├── test_cli.py                 # CLI argument parsing & config creation
 │   ├── test_config_and_utils.py    # BridgeConfig validation, detect_wsl_ip, logging
@@ -336,7 +359,7 @@ pytest tests/test_config_and_utils.py
 | `test_service.py` | Session lifecycle, retry logic, cleanup loop, shutdown | 25 |
 | `test_protocols.py` | `UDPBridgeProtocol` & `WSLProtocol` behaviour | 10 |
 | `test_cli.py` | Argument parsing, config creation, error exits | 8 |
-| **Total** | **All modules** | **64** |
+| **Total** | **All modules** | **66** |
 
 ------------------------------------------------------------------------
 
