@@ -132,9 +132,14 @@ flowchart LR
     PN <-->|UDP| SVC
 
     SVC -.->|response| P1
-    P1 -.->|relay| C1
+    P1 -.->|bridge_transport.sendto| L
     SVC -.->|response| P2
-    P2 -.->|relay| C2
+    P2 -.->|bridge_transport.sendto| L
+    SVC -.->|response| PN
+    PN -.->|bridge_transport.sendto| L
+    L -.->|relay| C1
+    L -.->|relay| C2
+    L -.->|relay| CN
 ```
 
 ------------------------------------------------------------------------
@@ -156,23 +161,24 @@ sequenceDiagram
 
     alt New client
         SM->>W: create_datagram_endpoint()
-        Note over SM,W: Retry up to N times<br/>if connection fails
+        Note over SM,W: Retry up to retry_attempts times<br/>with retry_delay seconds between each
         W-->>SM: transport + protocol ready
         SM->>SM: sessions[client_addr] = ClientSession
     end
 
-    SM->>SM: session.refresh() — update last_active
+    SM->>SM: session.refresh()
     SM->>W: transport.sendto(data)
+    SM->>SM: packets_forwarded += 1 + total_packets_forwarded += 1
     W->>S: UDP packet (forwarded)
 
-    S->>W: UDP response
-    W->>SM: session.refresh() + packets_received++
+    S->>W: datagram_received(response, addr)
+    W->>W: session.refresh() + packets_received += 1 + total_packets_received += 1
     W->>B: bridge_transport.sendto(response, client_addr)
     B->>C: UDP response (relayed)
 
-    loop Every idle_timeout/2 seconds
-        SM->>SM: scan for stale sessions
-        SM->>W: transport.close() — cleanup idle
+    loop Every max(0.5, idle_timeout / 2) seconds
+        SM->>SM: now - session.last_active > idle_timeout
+        SM->>W: transport.close() — remove stale session
     end
 ```
 
@@ -312,14 +318,14 @@ python -m udp_win_wsl_bridge --log-level DEBUG
 ### Example Output
 
 ```
-[2026-02-24 12:00:00] INFO: Listening on ('0.0.0.0', 5060) -> WSL 172.25.224.1:5060
-[2026-02-24 12:00:01] INFO: Starting UDP bridge: 5060 -> 172.25.224.1:5060
-[2026-02-24 12:00:05] INFO: Session created: ('192.168.1.100', 12345) (total: 1)
-[2026-02-24 12:00:05] DEBUG: 192.168.1.100:12345 -> WSL (42 bytes)
-[2026-02-24 12:00:05] DEBUG: WSL -> ('192.168.1.100', 12345) (42 bytes)
-[2026-02-24 12:00:15] DEBUG: Active sessions: 1/1000, Total packets: 5 sent, 5 received
-[2026-02-24 12:00:30] INFO: Shutting down bridge
-[2026-02-24 12:00:30] INFO: Final stats: 1 sessions created, 5 packets sent, 5 packets received
+[2026-04-03 12:00:00] INFO: Starting UDP bridge: 5060 -> 172.25.224.1:5060
+[2026-04-03 12:00:00] INFO: Listening on ('0.0.0.0', 5060) -> WSL 172.25.224.1:5060
+[2026-04-03 12:00:05] INFO: Session created: ('192.168.1.100', 12345) (total: 1)
+[2026-04-03 12:00:05] DEBUG: 192.168.1.100:12345 -> WSL (42 bytes)
+[2026-04-03 12:00:05] DEBUG: WSL -> ('192.168.1.100', 12345) (42 bytes)
+[2026-04-03 12:00:15] DEBUG: Active sessions: 1/1000, Total packets: 5 sent, 5 received
+[2026-04-03 12:00:30] INFO: Shutting down bridge
+[2026-04-03 12:00:30] INFO: Final stats: 1 sessions created, 5 packets sent, 5 packets received
 ```
 
 ### Graceful Shutdown
