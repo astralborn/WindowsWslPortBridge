@@ -5,8 +5,8 @@ import subprocess
 
 import pytest
 
-from ..config import BridgeConfig
-from ..utils import detect_wsl_ip
+from udp_win_wsl_bridge.config import BridgeConfig
+from udp_win_wsl_bridge.utils import detect_wsl_ip
 
 
 # ---------------------------------------------------------------------------
@@ -82,13 +82,13 @@ def test_zero_retry_delay_is_valid():
 def test_detect_wsl_ip_returns_first_ip():
     mock_result = MagicMock()
     mock_result.stdout = "172.25.224.1 172.25.224.2\n"
-    with patch("subprocess.run", return_value=mock_result):
+    with patch("udp_win_wsl_bridge.utils.subprocess.run", return_value=mock_result):
         ip = detect_wsl_ip()
     assert ip == "172.25.224.1"
 
 
 def test_detect_wsl_ip_raises_on_timeout():
-    with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("wsl", 10)):
+    with patch("udp_win_wsl_bridge.utils.subprocess.run", side_effect=subprocess.TimeoutExpired("wsl", 10)):
         with pytest.raises(RuntimeError, match="timed out"):
             detect_wsl_ip()
 
@@ -96,7 +96,7 @@ def test_detect_wsl_ip_raises_on_timeout():
 def test_detect_wsl_ip_raises_on_empty_output():
     mock_result = MagicMock()
     mock_result.stdout = "   \n"
-    with patch("subprocess.run", return_value=mock_result):
+    with patch("udp_win_wsl_bridge.utils.subprocess.run", return_value=mock_result):
         with pytest.raises(RuntimeError, match="No IP"):
             detect_wsl_ip()
 
@@ -104,14 +104,14 @@ def test_detect_wsl_ip_raises_on_empty_output():
 def test_detect_wsl_ip_raises_on_invalid_ip():
     mock_result = MagicMock()
     mock_result.stdout = "not-an-ip\n"
-    with patch("subprocess.run", return_value=mock_result):
+    with patch("udp_win_wsl_bridge.utils.subprocess.run", return_value=mock_result):
         with pytest.raises(RuntimeError):
             detect_wsl_ip()
 
 
 def test_detect_wsl_ip_raises_on_process_error():
     with patch(
-        "subprocess.run",
+        "udp_win_wsl_bridge.utils.subprocess.run",
         side_effect=subprocess.CalledProcessError(1, "wsl"),
     ):
         with pytest.raises(RuntimeError):

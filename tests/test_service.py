@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ..service import UDPBridgeService
-from ..models import ClientSession
+from udp_win_wsl_bridge.service import UDPBridgeService
+from udp_win_wsl_bridge.models import ClientSession
 
 
 # ---------------------------------------------------------------------------
@@ -114,8 +114,9 @@ async def test_forward_creates_new_session():
     mock_transport = make_mock_transport()
     mock_protocol = MagicMock()
 
+    loop = asyncio.get_running_loop()
     with patch.object(
-        asyncio.get_event_loop().__class__,
+        loop,
         "create_datagram_endpoint",
         new_callable=AsyncMock,
         return_value=(mock_transport, mock_protocol),
@@ -222,13 +223,14 @@ async def test_cleanup_loop_removes_stale_sessions():
     stale_session = make_mock_session(last_active=time.time() - 1.0)
     svc.sessions[addr] = stale_session
 
-    # Run the loop long enough for one tick
+    # _cleanup_loop sleeps max(0.5, idle_timeout/2) before its first tick,
+    # so we must wait at least 0.6 s to guarantee one cleanup pass runs.
     task = asyncio.create_task(svc._cleanup_loop())
-    await asyncio.sleep(0.25)
+    await asyncio.sleep(0.6)
+    # Signal shutdown so the loop exits cleanly after finishing its current
+    # cleanup pass, avoiding a race where cancel() interrupts the gather.
     svc.shutdown_event.set()
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+    await asyncio.wait_for(task, timeout=1.0)
 
     assert addr not in svc.sessions
     stale_session.transport.close.assert_called_once()
