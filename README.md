@@ -3,14 +3,11 @@
 > A production-ready async UDP bridge enabling seamless communication between Windows
 > and WSL with enterprise-grade features.
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
-![Asyncio](https://img.shields.io/badge/asyncio-built--in-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-Windows%20%2B%20WSL-lightgrey.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Version](https://img.shields.io/badge/Version-1.0.0-brightgreen.svg)
-![pytest](https://img.shields.io/badge/pytest-9.0%2B-orange.svg)
-![pytest-asyncio](https://img.shields.io/badge/pytest--asyncio-1.3%2B-orange.svg)
-![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Asyncio](https://img.shields.io/badge/asyncio-3776AB?style=flat-square&logo=python&logoColor=white)
+![Platform](https://img.shields.io/badge/Windows%20%2B%20WSL-0078D4?style=flat-square&logo=windows&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square&logo=opensourceinitiative&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 
 ------------------------------------------------------------------------
 
