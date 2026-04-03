@@ -7,6 +7,7 @@ import pytest
 
 from udp_win_wsl_bridge.config import BridgeConfig
 from udp_win_wsl_bridge.utils import detect_wsl_ip
+from udp_win_wsl_bridge.logging_utils import setup_logging
 
 
 # ---------------------------------------------------------------------------
@@ -116,3 +117,25 @@ def test_detect_wsl_ip_raises_on_process_error():
     ):
         with pytest.raises(RuntimeError):
             detect_wsl_ip()
+
+
+# ---------------------------------------------------------------------------
+# setup_logging
+# ---------------------------------------------------------------------------
+
+import logging
+
+
+@pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
+def test_setup_logging_accepts_valid_levels(level):
+    """setup_logging must configure the root logger without raising."""
+    root = logging.getLogger()
+    # Remove existing handlers so basicConfig actually applies the new level
+    original_handlers = root.handlers[:]
+    root.handlers.clear()
+    try:
+        setup_logging(level)
+        assert root.level == getattr(logging, level)
+    finally:
+        root.handlers = original_handlers
+

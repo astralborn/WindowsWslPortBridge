@@ -241,6 +241,179 @@ async def test_cleanup_loop_removes_stale_sessions():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
+async def test_cleanup_loop_keeps_active_sessions():
+    """Sessions whose last_active is within the idle window must be kept."""
+    svc = make_service(idle_timeout=60.0)
+    svc.bridge_transport = make_mock_transport()
+
+    addr = ("8.8.8.9", 8001)
+    active_session = make_mock_session(last_active=time.time())
+    svc.sessions[addr] = active_session
+
+    # sleep_interval = max(0.5, 60/2) = 30 s, so we only need one short tick
+    # to confirm no cleanup ran.  Cancel after the first sleep finishes.
+    task = asyncio.create_task(svc._cleanup_loop())
+    await asyncio.sleep(0.6)
+    svc.shutdown_event.set()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    # The session must still be present — it was not stale
+    assert addr in svc.sessions
+    active_session.transport.close.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_forward_cleans_up_session_on_sendto_error():
+    """If sendto raises the session must be removed."""
+    svc = make_service()
+    svc.bridge_transport = make_mock_transport()
+
+    addr = ("10.0.0.1", 1000)
+    broken_transport = make_mock_transport()
+    broken_transport.sendto.side_effect = OSError("broken pipe")
+    svc.sessions[addr] = make_mock_session()
+    svc.sessions[addr].transport = broken_transport
+
+    await svc.forward_to_wsl(b"data", addr)
+
+    assert addr not in svc.sessions
+    broken_transport.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_close_all_sessions_clears_everything():
+    svc = make_service()
+    transports = []
+    for i in range(3):
+        t = make_mock_transport()
+        transports.append(t)
+        session = make_mock_session()
+        session.transport = t
+        svc.sessions[(f"10.0.0.{i}", 5000 + i)] = session
+
+    await svc._close_all_sessions()
+
+    assert not svc.sessions
+    for t in transports:
+        t.close.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# shutdown / async_shutdown
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_forward_drops_when_session_creation_fails():
+    """If _create_session returns None the packet must be silently dropped."""
+    svc = make_service()
+    svc.bridge_transport = make_mock_transport()
+
+    client = ("5.5.5.5", 5000)
+    loop = asyncio.get_running_loop()
+    with patch.object(
+        loop,
+        "create_datagram_endpoint",
+        new_callable=AsyncMock,
+        side_effect=OSError("connect failed"),
+    ):
+        await svc.forward_to_wsl(b"data", client)
+
+    assert client not in svc.sessions
+    assert svc.total_sessions_created == 0
+
+
+@pytest.mark.asyncio
+async def test_cleanup_session_handles_close_exception():
+    """If transport.close() raises, _cleanup_session must still remove the session."""
+    svc = make_service()
+    addr = ("6.6.6.6", 6000)
+    broken_transport = make_mock_transport()
+    broken_transport.close.side_effect = OSError("already closed")
+    session = make_mock_session()
+    session.transport = broken_transport
+    svc.sessions[addr] = session
+
+    await svc._cleanup_session(addr)
+
+    assert addr not in svc.sessions
+
+
+@pytest.mark.asyncio
+async def test_cleanup_loop_logs_when_active_sessions_remain():
+    """The debug log branch (if self.sessions) must be exercised."""
+    # idle_timeout=60 → session won't go stale, but sleep_interval=max(0.5,30)=30
+    # so we use idle_timeout=1 → sleep_interval=max(0.5,0.5)=0.5, and the session
+    # stays fresh because last_active is refreshed to time.time() just before the tick.
+    svc = make_service(idle_timeout=60.0)
+    svc.bridge_transport = make_mock_transport()
+
+    addr = ("7.7.7.7", 7000)
+    svc.sessions[addr] = make_mock_session(last_active=time.time())
+
+    # Override sleep_interval so the loop ticks quickly
+    original_max = max
+    call_count = 0
+
+    def fast_max(a, b):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return 0.5  # first call inside _cleanup_loop: make it tick fast
+        return original_max(a, b)
+
+    with patch("udp_win_wsl_bridge.service.max", side_effect=fast_max):
+        task = asyncio.create_task(svc._cleanup_loop())
+        await asyncio.sleep(0.6)
+        svc.shutdown_event.set()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    assert addr in svc.sessions
+
+
+@pytest.mark.asyncio
+async def test_start_binds_and_waits_for_shutdown():
+    """start() must create the datagram endpoint and exit once shutdown fires."""
+    svc = make_service()
+    mock_transport = make_mock_transport()
+
+    loop = asyncio.get_running_loop()
+    with patch.object(
+        loop,
+        "create_datagram_endpoint",
+        new_callable=AsyncMock,
+        return_value=(mock_transport, MagicMock()),
+    ):
+        async def _trigger_shutdown():
+            await asyncio.sleep(0.05)
+            svc.shutdown()
+
+        await asyncio.gather(svc.start(), _trigger_shutdown())
+
+    assert svc.bridge_transport is mock_transport
+
+
+# ---------------------------------------------------------------------------
+# shutdown / async_shutdown
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_shutdown_cancels_cleanup_task():
+    """shutdown() must cancel _cleanup_task when it is set."""
+    svc = make_service()
+    mock_task = MagicMock(spec=asyncio.Task)
+    svc._cleanup_task = mock_task
+
+    svc.shutdown()
+
+    mock_task.cancel.assert_called_once()
+    assert svc.shutdown_event.is_set()
+
+
+@pytest.mark.asyncio
 async def test_async_shutdown_closes_all_sessions():
     svc = make_service()
     svc.bridge_transport = make_mock_transport()
