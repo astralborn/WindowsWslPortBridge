@@ -226,7 +226,7 @@ WindowsWslPortBridge/
 ├── docs/
 │   └── images/
 │       └── architecture.svg        ← component diagram
-├── tests/                          ← test suite (66 tests)
+├── tests/                          ← test suite
 │   ├── __init__.py
 │   ├── test_cli.py                 # CLI argument parsing & config creation
 │   ├── test_config_and_utils.py    # BridgeConfig validation, detect_wsl_ip, logging
