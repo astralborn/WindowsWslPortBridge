@@ -77,7 +77,8 @@ class WSLProtocol(asyncio.DatagramProtocol):
         :return: None
         """
         self.client_addr = client_addr
-        self.bridge_transport = bridge_transport
+        # Do NOT store bridge_transport directly — read it from the service
+        # at relay time so we always use the current (non-stale) transport.
         self.service = service
         self.transport: Optional[asyncio.DatagramTransport] = None
 
@@ -108,13 +109,18 @@ class WSLProtocol(asyncio.DatagramProtocol):
         :param addr: WSL service address
         :return: None
         """
+        bridge_transport = self.service.bridge_transport
+        if bridge_transport is None or bridge_transport.is_closing():
+            log(f"Bridge transport unavailable, dropping WSL response for {self.client_addr}", "WARNING")
+            return
+
         session = self.service.sessions.get(self.client_addr)
         if session:
             session.refresh()
             session.packets_received += 1
             self.service.total_packets_received += 1
 
-        self.bridge_transport.sendto(data, self.client_addr)
+        bridge_transport.sendto(data, self.client_addr)
         log(f"WSL -> {self.client_addr} ({len(data)} bytes)", "DEBUG")
 
     def error_received(self, exc: Exception) -> None:

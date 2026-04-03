@@ -2,7 +2,7 @@
 
 import time
 from dataclasses import dataclass, field
-from typing import Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import asyncio
@@ -26,10 +26,11 @@ class ClientSession:
     packets_forwarded: int = 0
     packets_received: int = 0
 
-    def refresh(self) -> None:
-        """Update last_active to the current time.
+    def refresh(self, ts: Optional[float] = None) -> None:
+        """Update last_active to the current time (or a provided timestamp).
 
+        :param ts: Timestamp to use; defaults to :func:`time.time`.
         :return: None
         """
-        self.last_active = time.time()
+        self.last_active = ts if ts is not None else time.time()
 

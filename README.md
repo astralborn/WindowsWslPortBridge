@@ -197,7 +197,7 @@ This bridge uses only Python standard library modules — no `pip install` requi
 ### Project Structure
 
 ```
-udp_bridge_pkg/
+WindowsWslPortBridge/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
@@ -205,20 +205,23 @@ udp_bridge_pkg/
 ├── pyproject.toml
 ├── docs/
 │   └── images/
-│       └── architecture.svg   ← component diagram
-└── udp_win_wsl_bridge/        ← installable package
-    ├── __init__.py            # Package exports
-    ├── __main__.py            # Entry point (supports both run modes)
-    ├── cli.py                 # Argument parsing
-    ├── config.py              # Configuration dataclass & validation
-    ├── logging_utils.py       # Logging setup
-    ├── models.py              # ClientSession data model
-    ├── protocols.py           # asyncio DatagramProtocol implementations
-    ├── service.py             # Main UDPBridgeService
-    ├── utils.py               # WSL IP auto-detection
-    └── tests/
-        ├── test_service.py
-        └── test_config_and_utils.py
+│       └── architecture.svg        ← component diagram
+├── tests/                          ← test suite (64 tests)
+│   ├── __init__.py
+│   ├── test_cli.py                 # CLI argument parsing & config creation
+│   ├── test_config_and_utils.py    # BridgeConfig validation, detect_wsl_ip, logging
+│   ├── test_protocols.py           # UDPBridgeProtocol & WSLProtocol
+│   └── test_service.py             # UDPBridgeService (session lifecycle, shutdown)
+└── udp_win_wsl_bridge/             ← installable package
+    ├── __init__.py                 # Package exports
+    ├── __main__.py                 # Entry point (supports both run modes)
+    ├── cli.py                      # Argument parsing
+    ├── config.py                   # Configuration dataclass & validation
+    ├── logging_utils.py            # Logging setup
+    ├── models.py                   # ClientSession data model
+    ├── protocols.py                # asyncio DatagramProtocol implementations
+    ├── service.py                  # Main UDPBridgeService
+    └── utils.py                    # WSL IP auto-detection
 ```
 
 ------------------------------------------------------------------------
@@ -228,7 +231,7 @@ udp_bridge_pkg/
 ### Basic Usage
 
 ```powershell
-# From inside the udp_bridge_pkg\ folder
+# From inside the WindowsWslPortBridge\ folder
 python -m udp_win_wsl_bridge
 ```
 
@@ -318,12 +321,23 @@ pytest
 # Run with verbose output
 pytest -v
 
+
 # Run a specific test file
-pytest udp_win_wsl_bridge/tests/test_service.py
+pytest tests/test_service.py
+pytest tests/test_protocols.py
+pytest tests/test_cli.py
+pytest tests/test_config_and_utils.py
 ```
 
-The test suite covers session creation and retry logic, session limit enforcement,
-idle cleanup, concurrent client isolation, task tracking, and graceful shutdown.
+### Test Suite Coverage
+
+| Test file | What it covers | Tests |
+|---|---|---|
+| `test_config_and_utils.py` | `BridgeConfig` validation, `detect_wsl_ip`, `setup_logging` | 21 |
+| `test_service.py` | Session lifecycle, retry logic, cleanup loop, shutdown | 25 |
+| `test_protocols.py` | `UDPBridgeProtocol` & `WSLProtocol` behaviour | 10 |
+| `test_cli.py` | Argument parsing, config creation, error exits | 8 |
+| **Total** | **All modules** | **64** |
 
 ------------------------------------------------------------------------
 
@@ -379,7 +393,7 @@ You ran `python __main__.py` from inside the `udp_win_wsl_bridge\` folder.
 Run from the **parent** folder instead:
 
 ```powershell
-# Correct — from udp_bridge_pkg\
+# Correct — from WindowsWslPortBridge\
 python -m udp_win_wsl_bridge
 
 # Also works — full path to the file

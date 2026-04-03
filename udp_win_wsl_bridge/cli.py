@@ -78,9 +78,14 @@ def create_config_from_args(args: argparse.Namespace) -> BridgeConfig:
     try:
         if args.wsl_host:
             wsl_host = args.wsl_host
-            ipaddress.ip_address(wsl_host)  # Validate early
+            try:
+                ipaddress.ip_address(wsl_host)
+            except ValueError:
+                log(f"Invalid WSL host IP address: {wsl_host!r}", "ERROR")
+                sys.exit(1)
         else:
             wsl_host = detect_wsl_ip()  # Raises RuntimeError on failure
+            log(f"Auto-detected WSL IP: {wsl_host}")
 
         config = BridgeConfig(
             wsl_host=wsl_host,
@@ -95,7 +100,10 @@ def create_config_from_args(args: argparse.Namespace) -> BridgeConfig:
         config.validate()
         return config
 
-    except (ValueError, RuntimeError) as exc:
+    except RuntimeError as exc:
         log(f"Configuration error: {exc}", "ERROR")
+        sys.exit(1)
+    except ValueError as exc:
+        log(f"Invalid configuration value: {exc}", "ERROR")
         sys.exit(1)
 

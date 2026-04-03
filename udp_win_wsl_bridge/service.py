@@ -46,6 +46,9 @@ class UDPBridgeService:
         self._cleanup_task: Optional[asyncio.Task] = None
         # Track in-flight forwarding tasks so they can't be GC'd mid-execution.
         self._pending_tasks: Set[asyncio.Task] = set()
+        # Clients whose session is currently being created — prevents a race
+        # where two packets from the same new client both trigger _create_session.
+        self._creating: Set[ClientAddr] = set()
         self.total_sessions_created = 0
         self.total_packets_forwarded = 0
         self.total_packets_received = 0
@@ -72,9 +75,12 @@ class UDPBridgeService:
             lambda: UDPBridgeProtocol(self),
             local_addr=("0.0.0.0", self.listen_port),
         )
-
-        self._cleanup_task = asyncio.create_task(self._cleanup_loop())
-        await self.shutdown_event.wait()
+        try:
+            self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+            await self.shutdown_event.wait()
+        except Exception:
+            self.bridge_transport.close()
+            raise
 
     async def forward_to_wsl(self, data: bytes, client: ClientAddr) -> None:
         """Forward UDP packet from client to WSL.
@@ -93,7 +99,16 @@ class UDPBridgeService:
             return
 
         if client not in self.sessions:
-            session = await self._create_session(client)
+            # Guard against concurrent packets from the same new client both
+            # triggering _create_session simultaneously, which would leak a session.
+            if client in self._creating:
+                log(f"Session creation in progress for {client}, dropping packet", "DEBUG")
+                return
+            self._creating.add(client)
+            try:
+                session = await self._create_session(client)
+            finally:
+                self._creating.discard(client)
             if session is None:
                 return
             self.sessions[client] = session
@@ -117,6 +132,7 @@ class UDPBridgeService:
         :param client: Client address tuple
         :return: ClientSession on success, None on failure
         """
+        assert self.bridge_transport is not None, "bridge_transport must be set before creating sessions"
         for attempt in range(self.retry_attempts):
             try:
                 transport, protocol = await asyncio.get_running_loop().create_datagram_endpoint(
@@ -209,12 +225,19 @@ class UDPBridgeService:
     async def async_shutdown(self) -> None:
         """Perform a full graceful shutdown asynchronously.
 
-        Waits for all pending forwarding tasks, closes every session, then
-        closes the bridge transport.
+        Waits for the cleanup task to finish, waits for all pending forwarding
+        tasks, closes every session, then closes the bridge transport.
 
         :return: None
         """
         self.shutdown()
+
+        # Wait for the background cleanup task to finish cancelling.
+        if self._cleanup_task:
+            try:
+                await self._cleanup_task
+            except (asyncio.CancelledError, Exception):
+                pass
 
         # Wait for any in-flight forwarding tasks.
         if self._pending_tasks:

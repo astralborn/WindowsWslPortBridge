@@ -30,6 +30,7 @@ The WSL IP address can be specified manually or auto-detected using
 
 import asyncio
 import os
+import signal
 import sys
 
 # ---------------------------------------------------------------------------
@@ -82,26 +83,38 @@ async def main() -> None:
     )
 
     log(f"Starting UDP bridge: {config.listen_port} -> {config.wsl_host}:{config.wsl_port}")
+
+    def _request_shutdown(sig: int, _frame: object) -> None:
+        log(f"Received signal {sig}, shutting down…")
+        service.shutdown()
+
+    signal.signal(signal.SIGINT, _request_shutdown)
+    # SIGBREAK is Ctrl+Break on Windows (not available on Unix)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, _request_shutdown)  # type: ignore[attr-defined]
+
     try:
         await service.start()
     except OSError as exc:
-        if hasattr(exc, "winerror") and exc.winerror == 10048:
+        if sys.platform == "win32" and getattr(exc, "winerror", None) == 10048:
             log(f"Port {config.listen_port} is already in use. Check if another instance is running.", "ERROR")
         else:
             log(f"OS error: {exc}", "ERROR")
-        await service.async_shutdown()
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        log("Keyboard interrupt received")
-        await service.async_shutdown()
+    except asyncio.CancelledError:
+        log("Service cancelled")
     except Exception as exc:
         log(f"Unexpected error: {exc}", "ERROR")
-        await service.async_shutdown()
         raise
+    finally:
+        await service.async_shutdown()
 
 
 def run() -> None:
     """Entry point for console script."""
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass  # Clean exit — shutdown was already handled inside main()
 
 
 if __name__ == "__main__":
